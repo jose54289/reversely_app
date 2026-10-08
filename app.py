@@ -12,8 +12,8 @@ from deepface import DeepFace
 app = Flask(__name__)
 app.secret_key = 'clave_secreta_super_segura_para_sesiones'
 
-# Configuración de Stripe (Llave de prueba oficial de Stripe)
-stripe.api_key = "sk_test_51PlaceholderKeyForTestingPurposesChangeLater"
+# Configuración de tu Stripe con tu clave real de prueba
+stripe.api_key = "sk_test_51UOLvg0HlujKuvUHLT4gqSAPD9iCSntzXVnzmnrO5I2Lepa1PrugDKZOhWPe24x4ykNjL5SeVh4nKdJRvySJHlJ400CMOqsMYw"
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
