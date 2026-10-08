@@ -1,7 +1,7 @@
 flask==3.0.2
 deepface==0.0.90
 tensorflow==2.15.0
-keras==2.15.0
+tf-keras==2.15.0
 opencv-python==4.9.0.80
 requests==2.31.0
 beautifulsoup4==4.12.0
