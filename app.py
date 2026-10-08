@@ -3,13 +3,17 @@ import sqlite3
 import urllib.request
 import urllib.parse
 import json
+import stripe
 from PIL import Image
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from deepface import DeepFace
 
 app = Flask(__name__)
-app.secret_key = 'clave_secreta_super_segura_para_sesiones' # Necesaria para las sesiones de usuario
+app.secret_key = 'clave_secreta_super_segura_para_sesiones'
+
+# Configuración de Stripe (Llave de prueba oficial de Stripe para desarrollo)
+stripe.api_key = "sk_test_51PlaceholderKeyForTestingPurposesChangeLater"
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -17,7 +21,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 SERPAPI_KEY = "8e1a53a0e5a6d43a6fc394aaedfc4274334054a2c8d2f29352ebd668305f7029"
 
-# Inicializar la base de datos de usuarios
+# Inicializar la base de datos de usuarios y créditos
 def init_db():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
@@ -69,7 +73,6 @@ def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    # Consultar créditos actuales del usuario
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
     cursor.execute('SELECT credits, email FROM users WHERE id = ?', (session['user_id'],))
@@ -128,12 +131,50 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
+@app.route('/buy-credits', methods=['POST'])
+def buy_credits():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': 'Paquete de 10 Créditos - Reversely AI',
+                    },
+                    'unit_amount': 500,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=url_for('payment_success', _external=True),
+            cancel_url=url_for('index', _external=True),
+        )
+        return redirect(checkout_session.url, code=303)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/payment-success')
+def payment_success():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET credits = credits + 10 WHERE id = ?', (session['user_id'],))
+    conn.commit()
+    conn.close()
+    
+    return redirect(url_for('index'))
+
 @app.route('/search', methods=['POST'])
 def search():
     if 'user_id' not in session:
         return jsonify({'error': 'No autorizado'}), 401
         
-    # Verificar y descontar créditos
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
     cursor.execute('SELECT credits FROM users WHERE id = ?', (session['user_id'],))
@@ -143,7 +184,6 @@ def search():
         conn.close()
         return jsonify({'success': False, 'error': 'Te has quedado sin créditos. Recarga tu cuenta para continuar.'}), 403
         
-    # Descontar 1 crédito
     cursor.execute('UPDATE users SET credits = credits - 1 WHERE id = ?', (session['user_id'],))
     conn.commit()
     conn.close()
