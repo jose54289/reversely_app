@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reversely - AI Reverse Face & Image Search</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+    <header class="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-white">R</div>
+                <span class="text-lg font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Reversely AI</span>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Motor de Búsqueda Web</span>
+        </div>
+    </header>
+
+    <main class="w-full max-w-2xl mx-auto px-4 py-8 flex flex-col gap-6">
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl font-extrabold tracking-tight">Búsqueda Inversa de Rostros e Imágenes</h1>
+            <p class="text-sm text-slate-400">Sube una foto para buscar coincidencias, rostros similares y duplicados en la web.</p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-xs font-medium text-center">
+            <button onclick="setSearchType('face')" id="tab-face" class="py-2.5 rounded-lg bg-indigo-600 text-white transition-all shadow-sm">Buscar Rostro</button>
+            <button onclick="setSearchType('similar')" id="tab-similar" class="py-2.5 rounded-lg text-slate-400 hover:text-white transition-all">Similares</button>
+            <button onclick="setSearchType('duplicates')" id="tab-duplicates" class="py-2.5 rounded-lg text-slate-400 hover:text-white transition-all">Duplicados</button>
+        </div>
+
+        <div class="bg-slate-900 border-2 border-dashed border-slate-800 hover:border-indigo-500/50 transition-all rounded-2xl p-8 relative flex flex-col items-center justify-center group cursor-pointer shadow-lg">
+            <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+            <div id="placeholder" class="text-center flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-indigo-600/10 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform border border-indigo-500/20">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                </div>
+                <p class="text-sm font-semibold text-slate-200">Toca o arrastra para subir una foto</p>
+                <p class="text-xs text-slate-500 mt-1">Formatos soportados: JPG, PNG, WEBP</p>
+            </div>
+            <img id="preview" class="hidden max-h-72 rounded-xl object-contain shadow-md" alt="Vista previa">
+        </div>
+
+        <button id="searchBtn" onclick="performSearch()" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            Iniciar Búsqueda en la Web
+        </button>
+
+        <div id="loading" class="hidden flex flex-col items-center justify-center py-8 space-y-3">
+            <div class="animate-spin rounded-full h-10 w-10 border-2 border-indigo-500 border-t-transparent"></div>
+            <p class="text-sm text-slate-400 font-medium">Analizando patrones faciales y rastreando en internet...</p>
+        </div>
+
+        <div id="results" class="hidden space-y-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+                <h3 class="font-bold text-indigo-400 text-sm uppercase tracking-wider border-b border-slate-800 pb-2">Atributos Extraídos</h3>
+                <div id="analysisContent" class="grid grid-cols-2 gap-3 text-sm text-slate-300"></div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+                <h3 class="font-bold text-indigo-400 text-sm uppercase tracking-wider border-b border-slate-800 pb-2">Resultados en la Web y Coincidencias</h3>
+                <div id="webMatchesContent" class="space-y-3"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-xs text-slate-600 py-6 text-center border-t border-slate-900">
+        Reversely AI Clone &bull; Diseñado con Python Flask y DeepFace
+    </footer>
+
+    <script>
+        let currentType = 'face';
+        let selectedFile = null;
+
+        function setSearchType(type) {
+            currentType = type;
+            ['face', 'similar', 'duplicates'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === type) {
+                    btn.className = 'py-2.5 rounded-lg bg-indigo-600 text-white transition-all shadow-sm';
+                } else {
+                    btn.className = 'py-2.5 rounded-lg text-slate-400 hover:text-white transition-all';
+                }
+            });
+        }
+
+        const imageInput = document.getElementById('imageInput');
+        const preview = document.getElementById('preview');
+        const placeholder = document.getElementById('placeholder');
+        const searchBtn = document.getElementById('searchBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const analysisContent = document.getElementById('analysisContent');
+        const webMatchesContent = document.getElementById('webMatchesContent');
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    searchBtn.disabled = false;
+                    results.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function performSearch() {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            formData.append('type', currentType);
+
+            loading.classList.remove('hidden');
+            results.classList.add('hidden');
+            searchBtn.disabled = true;
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    body: formData
+                });
+                const res = await response.json();
+
+                if (res.success) {
+                    const data = res.analysis;
+                    
+                    analysisContent.innerHTML = `
+                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
+                            <span class="block text-xs text-slate-500">Edad Estimada</span>
+                            <span class="font-semibold text-slate-200">${Math.round(data.age || 0)} años</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
+                            <span class="block text-xs text-slate-500">Género</span>
+                            <span class="font-semibold text-slate-200">${data.dominant_gender || 'N/A'}</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
+                            <span class="block text-xs text-slate-500">Emoción</span>
+                            <span class="font-semibold text-slate-200">${data.dominant_emotion || 'N/A'}</span>
+                        </div>
+                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
+                            <span class="block text-xs text-slate-500">Etnia / Raza</span>
+                            <span class="font-semibold text-slate-200">${data.dominant_race || 'N/A'}</span>
+                        </div>
+                    `;
+
+                    let htmlMatches = '';
+                    res.web_matches.forEach(match => {
+                        htmlMatches += `
+                            <div class="bg-slate-950/50 p-4 rounded-xl border border-slate-800/80 flex items-center justify-between gap-4">
+                                <div class="space-y-1">
+                                    <span class="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-medium">${match.category}</span>
+                                    <h4 class="font-semibold text-slate-200 text-sm">${match.title}</h4>
+                                    <a href="${match.url}" target="_blank" class="text-xs text-indigo-400 hover:underline truncate block max-w-xs">${match.url}</a>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <span class="text-xs text-slate-500 block">Coincidencia</span>
+                                    <span class="font-bold text-emerald-400 text-sm">${match.match}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    webMatchesContent.innerHTML = htmlMatches;
+                    results.classList.remove('hidden');
+                } else {
+                    alert('Error: ' + (res.error || 'No se pudo completar la búsqueda'));
+                }
+            } catch (err) {
+                alert('Error de conexión con el servidor');
+                console.error(err);
+            } finally {
+                loading.classList.add('hidden');
+                searchBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

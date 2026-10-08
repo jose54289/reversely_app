@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Iniciar Sesión - Reversely AI</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"></head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-96">
+        <h2 class="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h2>
+        {% if error %}<p class="bg-red-500 text-white p-2 rounded mb-4 text-sm">{{ error }}</p>{% endif %}
+        <form method="POST">
+            <div class="mb-4"><label class="block mb-2">Correo</label><input type="email" name="email" required class="w-full p-2 rounded bg-gray-700 text-white"></div>
+            <div class="mb-6"><label class="block mb-2">Contraseña</label><input type="password" name="password" required class="w-full p-2 rounded bg-gray-700 text-white"></div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded font-bold">Entrar</button>
+        </form>
+        <p class="mt-4 text-center text-sm">¿No tienes cuenta? <a href="/register" class="text-blue-400 underline">Regístrate aquí</a></p>
+    </div>
+</body>
+</html>
