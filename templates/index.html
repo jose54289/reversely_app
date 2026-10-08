@@ -3,180 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reversely - AI Reverse Face & Image Search</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>Reversely AI - Búsqueda Inversa</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
-    <header class="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-white">R</div>
-                <span class="text-lg font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Reversely AI</span>
+<body class="bg-gray-900 text-white min-h-screen">
+
+    <!-- Barra Superior de Usuario, Créditos y Pagos -->
+    <div class="max-w-4xl mx-auto mt-4 px-4 bg-gray-800 p-4 rounded-lg shadow flex flex-col sm:flex-row justify-between items-center">
+        <div class="mb-2 sm:mb-0">
+            <span class="text-gray-400">Cuenta:</span> <span class="font-bold text-blue-400">{{ user_email }}</span>
+            <span class="ml-4 text-gray-400">Créditos:</span> <span class="font-bold text-green-400" id="user-credits">{{ user_credits }}</span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <form action="/buy-credits" method="POST">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold text-sm shadow transition">
+                    💳 Comprar 10 Créditos ($5 USD)
+                </button>
+            </form>
+            <a href="/logout" class="text-red-400 hover:underline text-sm font-semibold">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-extrabold text-center mb-2">Búsqueda Inversa de Rostros e Imágenes</h1>
+        <p class="text-center text-gray-400 mb-6">Sube una foto para analizar su perfil y buscar coincidencias en la web.</p>
+
+        <!-- Selector de Tipo de Búsqueda -->
+        <div class="flex justify-center space-x-4 mb-6">
+            <button onclick="setSearchType('face')" id="btn-face" class="px-6 py-2 rounded-lg font-bold bg-blue-600 text-white transition">Buscar Rostro</button>
+            <button onclick="setSearchType('similar')" id="btn-similar" class="px-6 py-2 rounded-lg font-bold bg-gray-700 text-gray-300 transition">Similares</button>
+            <button onclick="setSearchType('duplicates')" id="btn-duplicates" class="px-6 py-2 rounded-lg font-bold bg-gray-700 text-gray-300 transition">Duplicados</button>
+        </div>
+
+        <!-- Zona de Carga de Imagen -->
+        <div class="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 transition relative" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" class="hidden" accept="image/*" onchange="previewImage(event)">
+            <div id="upload-prompt">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <p class="text-lg font-medium">Toca o arrastra para subir una foto</p>
+                <p class="text-xs text-gray-500 mt-1">Formatos soportados: JPG, PNG, WEBP</p>
             </div>
-            <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Motor de Búsqueda Web</span>
-        </div>
-    </header>
-
-    <main class="w-full max-w-2xl mx-auto px-4 py-8 flex flex-col gap-6">
-        <div class="text-center space-y-2">
-            <h1 class="text-3xl font-extrabold tracking-tight">Búsqueda Inversa de Rostros e Imágenes</h1>
-            <p class="text-sm text-slate-400">Sube una foto para buscar coincidencias, rostros similares y duplicados en la web.</p>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-xs font-medium text-center">
-            <button onclick="setSearchType('face')" id="tab-face" class="py-2.5 rounded-lg bg-indigo-600 text-white transition-all shadow-sm">Buscar Rostro</button>
-            <button onclick="setSearchType('similar')" id="tab-similar" class="py-2.5 rounded-lg text-slate-400 hover:text-white transition-all">Similares</button>
-            <button onclick="setSearchType('duplicates')" id="tab-duplicates" class="py-2.5 rounded-lg text-slate-400 hover:text-white transition-all">Duplicados</button>
-        </div>
-
-        <div class="bg-slate-900 border-2 border-dashed border-slate-800 hover:border-indigo-500/50 transition-all rounded-2xl p-8 relative flex flex-col items-center justify-center group cursor-pointer shadow-lg">
-            <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-            <div id="placeholder" class="text-center flex flex-col items-center">
-                <div class="w-16 h-16 rounded-full bg-indigo-600/10 text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform border border-indigo-500/20">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-                    </svg>
-                </div>
-                <p class="text-sm font-semibold text-slate-200">Toca o arrastra para subir una foto</p>
-                <p class="text-xs text-slate-500 mt-1">Formatos soportados: JPG, PNG, WEBP</p>
+            <div id="preview-container" class="hidden">
+                <img id="image-preview" class="mx-auto max-h-64 rounded-lg shadow-md">
+                <p id="file-name" class="mt-2 text-sm text-gray-300"></p>
             </div>
-            <img id="preview" class="hidden max-h-72 rounded-xl object-contain shadow-md" alt="Vista previa">
         </div>
 
-        <button id="searchBtn" onclick="performSearch()" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+        <!-- Botón de Ejecutar Búsqueda -->
+        <button onclick="startSearch()" id="search-btn" class="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition">
             Iniciar Búsqueda en la Web
         </button>
 
-        <div id="loading" class="hidden flex flex-col items-center justify-center py-8 space-y-3">
-            <div class="animate-spin rounded-full h-10 w-10 border-2 border-indigo-500 border-t-transparent"></div>
-            <p class="text-sm text-slate-400 font-medium">Analizando patrones faciales y rastreando en internet...</p>
+        <!-- Indicador de Carga -->
+        <div id="loading" class="hidden text-center mt-6">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-4 border-blue-500 border-solid"></div>
+            <p class="text-gray-400 mt-2">Analizando imagen y consultando motores de búsqueda...</p>
         </div>
 
-        <div id="results" class="hidden space-y-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
-                <h3 class="font-bold text-indigo-400 text-sm uppercase tracking-wider border-b border-slate-800 pb-2">Atributos Extraídos</h3>
-                <div id="analysisContent" class="grid grid-cols-2 gap-3 text-sm text-slate-300"></div>
-            </div>
+        <!-- Resultados -->
+        <div id="results-section" class="hidden mt-8 border-t border-gray-700 pt-6">
+            <h2 class="text-xl font-bold mb-4 text-blue-400">Resultados del Análisis</h2>
+            <div id="analysis-box" class="bg-gray-900 p-4 rounded-lg mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center"></div>
 
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
-                <h3 class="font-bold text-indigo-400 text-sm uppercase tracking-wider border-b border-slate-800 pb-2">Resultados en la Web y Coincidencias</h3>
-                <div id="webMatchesContent" class="space-y-3"></div>
-            </div>
+            <h2 class="text-xl font-bold mb-4 text-blue-400">Coincidencias en la Web</h2>
+            <div id="matches-container" class="space-y-4"></div>
         </div>
-    </main>
+    </div>
 
-    <footer class="text-xs text-slate-600 py-6 text-center border-t border-slate-900">
-        Reversely AI Clone &bull; Diseñado con Python Flask y DeepFace
+    <footer class="text-center text-gray-500 text-sm py-6">
+        Reversely AI SaaS • Desarrollado con Flask y DeepFace
     </footer>
 
     <script>
-        let currentType = 'face';
-        let selectedFile = null;
+        let currentSearchType = 'face';
 
         function setSearchType(type) {
-            currentType = type;
+            currentSearchType = type;
             ['face', 'similar', 'duplicates'].forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`btn-${t}`);
                 if (t === type) {
-                    btn.className = 'py-2.5 rounded-lg bg-indigo-600 text-white transition-all shadow-sm';
+                    btn.className = "px-6 py-2 rounded-lg font-bold bg-blue-600 text-white transition";
                 } else {
-                    btn.className = 'py-2.5 rounded-lg text-slate-400 hover:text-white transition-all';
+                    btn.className = "px-6 py-2 rounded-lg font-bold bg-gray-700 text-gray-300 transition";
                 }
             });
         }
 
-        const imageInput = document.getElementById('imageInput');
-        const preview = document.getElementById('preview');
-        const placeholder = document.getElementById('placeholder');
-        const searchBtn = document.getElementById('searchBtn');
-        const loading = document.getElementById('loading');
-        const results = document.getElementById('results');
-        const analysisContent = document.getElementById('analysisContent');
-        const webMatchesContent = document.getElementById('webMatchesContent');
-
-        imageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
+        function previewImage(event) {
+            const file = event.target.files[0];
             if (file) {
-                selectedFile = file;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                    placeholder.classList.add('hidden');
-                    searchBtn.disabled = false;
-                    results.classList.add('hidden');
-                };
-                reader.readAsDataURL(file);
+                document.getElementById('upload-prompt').classList.add('hidden');
+                const previewContainer = document.getElementById('preview-container');
+                previewContainer.classList.remove('hidden');
+                document.getElementById('image-preview').src = URL.createObjectURL(file);
+                document.getElementById('file-name').innerText = file.name;
             }
-        });
+        }
 
-        async function performSearch() {
-            if (!selectedFile) return;
+        async function startSearch() {
+            const fileInput = document.getElementById('file-input');
+            if (fileInput.files.length === 0) {
+                alert('Por favor selecciona una imagen primero.');
+                return;
+            }
 
             const formData = new FormData();
-            formData.append('image', selectedFile);
-            formData.append('type', currentType);
+            formData.append('image', fileInput.files[0]);
+            formData.append('type', currentSearchType);
 
-            loading.classList.remove('hidden');
-            results.classList.add('hidden');
-            searchBtn.disabled = true;
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results-section').classList.add('hidden');
 
             try {
                 const response = await fetch('/search', {
                     method: 'POST',
                     body: formData
                 });
-                const res = await response.json();
+                const data = await response.json();
 
-                if (res.success) {
-                    const data = res.analysis;
+                document.getElementById('loading').classList.add('hidden');
+
+                if (data.success) {
+                    document.getElementById('results-section').classList.remove('hidden');
                     
-                    analysisContent.innerHTML = `
-                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
-                            <span class="block text-xs text-slate-500">Edad Estimada</span>
-                            <span class="font-semibold text-slate-200">${Math.round(data.age || 0)} años</span>
-                        </div>
-                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
-                            <span class="block text-xs text-slate-500">Género</span>
-                            <span class="font-semibold text-slate-200">${data.dominant_gender || 'N/A'}</span>
-                        </div>
-                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
-                            <span class="block text-xs text-slate-500">Emoción</span>
-                            <span class="font-semibold text-slate-200">${data.dominant_emotion || 'N/A'}</span>
-                        </div>
-                        <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
-                            <span class="block text-xs text-slate-500">Etnia / Raza</span>
-                            <span class="font-semibold text-slate-200">${data.dominant_race || 'N/A'}</span>
-                        </div>
+                    // Mostrar Análisis
+                    const analysisBox = document.getElementById('analysis-box');
+                    analysisBox.innerHTML = `
+                        <div class="bg-gray-800 p-3 rounded"><span class="block text-gray-400 text-xs">Edad Aprox.</span><span class="text-lg font-bold">${Math.round(data.analysis.age)} años</span></div>
+                        <div class="bg-gray-800 p-3 rounded"><span class="block text-gray-400 text-xs">Género</span><span class="text-lg font-bold">${data.analysis.dominant_gender}</span></div>
+                        <div class="bg-gray-800 p-3 rounded"><span class="block text-gray-400 text-xs">Emoción</span><span class="text-lg font-bold">${data.analysis.dominant_emotion}</span></div>
+                        <div class="bg-gray-800 p-3 rounded"><span class="block text-gray-400 text-xs">Etnia/Raza</span><span class="text-lg font-bold">${data.analysis.dominant_race}</span></div>
                     `;
 
-                    let htmlMatches = '';
-                    res.web_matches.forEach(match => {
-                        htmlMatches += `
-                            <div class="bg-slate-950/50 p-4 rounded-xl border border-slate-800/80 flex items-center justify-between gap-4">
-                                <div class="space-y-1">
-                                    <span class="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-medium">${match.category}</span>
-                                    <h4 class="font-semibold text-slate-200 text-sm">${match.title}</h4>
-                                    <a href="${match.url}" target="_blank" class="text-xs text-indigo-400 hover:underline truncate block max-w-xs">${match.url}</a>
+                    // Mostrar Coincidencias Web
+                    const matchesContainer = document.getElementById('matches-container');
+                    matchesContainer.innerHTML = '';
+                    data.web_matches.forEach(match => {
+                        matchesContainer.innerHTML += `
+                            <div class="bg-gray-900 p-4 rounded-lg flex justify-between items-center border border-gray-700">
+                                <div>
+                                    <h3 class="font-bold text-white">${match.title}</h3>
+                                    <span class="text-xs text-blue-400">${match.category} • Similitud: ${match.match}</span>
                                 </div>
-                                <div class="text-right shrink-0">
-                                    <span class="text-xs text-slate-500 block">Coincidencia</span>
-                                    <span class="font-bold text-emerald-400 text-sm">${match.match}</span>
-                                </div>
+                                <a href="${match.url}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-semibold transition">Visitar</a>
                             </div>
                         `;
                     });
-                    webMatchesContent.innerHTML = htmlMatches;
-                    results.classList.remove('hidden');
+
                 } else {
-                    alert('Error: ' + (res.error || 'No se pudo completar la búsqueda'));
+                    alert(data.error || 'Ocurrió un error al procesar la búsqueda.');
                 }
             } catch (err) {
-                alert('Error de conexión con el servidor');
+                document.getElementById('loading').classList.add('hidden');
+                alert('Error de conexión con el servidor.');
                 console.error(err);
-            } finally {
-                loading.classList.add('hidden');
-                searchBtn.disabled = false;
             }
         }
     </script>
