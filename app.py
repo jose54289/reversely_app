@@ -131,14 +131,17 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
-@app.route('/buy-credits', methods=['POST'])
+@app.route('/buy-credits', methods=['GET', 'POST'])
 def buy_credits():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
+    # Si entran por GET, redirige de forma segura al inicio
+    if request.method == 'GET':
+        return redirect(url_for('index'))
+    
     try:
         checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
